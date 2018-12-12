@@ -5,7 +5,7 @@ source variables.bash
 
 # define new variables
 TF_MODEL_SERVER_HOST=`kubectl describe pod mnist -n ${NAMESPACE} | grep IP | sed -E 's/IP:[[:space:]]+//'`
-CLIENT_IMAGE=${DOCKER_HUB}/${DOCKER_USERNAME}/${DOCKER_IMAGE}
+CLIENT_IMAGE=${DOCKER_USERNAME}/${DOCKER_IMAGE}
 MNIST_SERVING_IP=`kubectl -n ${NAMESPACE} get svc/mnist --output=jsonpath={.spec.clusterIP}`
 
 

@@ -1,0 +1,89 @@
+/usr/local/lib/python2.7/dist-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+WARNING:tensorflow:From /usr/local/lib/python2.7/dist-packages/tensorflow/contrib/learn/python/learn/datasets/base.py:198: retry (from tensorflow.contrib.learn.python.learn.datasets.base) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use the retry module or similar alternatives.
+WARNING:tensorflow:From /opt/mnist_model.py:129: load_dataset (from tensorflow.contrib.learn.python.learn.datasets) is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use tf.data.
+WARNING:tensorflow:From /usr/local/lib/python2.7/dist-packages/tensorflow/contrib/learn/python/learn/datasets/__init__.py:80: load_mnist (from tensorflow.contrib.learn.python.learn.datasets.mnist) is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use alternatives such as official/mnist/dataset.py from tensorflow/models.
+WARNING:tensorflow:From /usr/local/lib/python2.7/dist-packages/tensorflow/contrib/learn/python/learn/datasets/mnist.py:300: read_data_sets (from tensorflow.contrib.learn.python.learn.datasets.mnist) is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use alternatives such as official/mnist/dataset.py from tensorflow/models.
+WARNING:tensorflow:From /usr/local/lib/python2.7/dist-packages/tensorflow/contrib/learn/python/learn/datasets/mnist.py:260: maybe_download (from tensorflow.contrib.learn.python.learn.datasets.base) is deprecated and will be removed in a future version.
+Instructions for updating:
+Please write your own downloading logic.
+WARNING:tensorflow:From /usr/local/lib/python2.7/dist-packages/tensorflow/contrib/learn/python/learn/datasets/base.py:219: wrapped_fn (from tensorflow.contrib.learn.python.learn.datasets.base) is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use urllib or similar directly.
+WARNING:tensorflow:From /usr/local/lib/python2.7/dist-packages/tensorflow/contrib/learn/python/learn/datasets/mnist.py:262: extract_images (from tensorflow.contrib.learn.python.learn.datasets.mnist) is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use tf.data to implement this functionality.
+WARNING:tensorflow:From /usr/local/lib/python2.7/dist-packages/tensorflow/contrib/learn/python/learn/datasets/mnist.py:267: extract_labels (from tensorflow.contrib.learn.python.learn.datasets.mnist) is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use tf.data to implement this functionality.
+WARNING:tensorflow:From /usr/local/lib/python2.7/dist-packages/tensorflow/contrib/learn/python/learn/datasets/mnist.py:290: __init__ (from tensorflow.contrib.learn.python.learn.datasets.mnist) is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use alternatives such as official/mnist/dataset.py from tensorflow/models.
+INFO:tensorflow:TF_CONFIG environment variable: {u'environment': u'cloud', u'cluster': {u'worker': [u'tf-mnistjob-worker-0:2222'], u'ps': [u'tf-mnistjob-ps-0:2222'], u'master': [u'tf-mnistjob-master-0:2222']}, u'task': {u'index': 0, u'type': u'master'}}
+INFO:tensorflow:Using config: {'_save_checkpoints_secs': None, '_session_config': None, '_keep_checkpoint_max': 5, '_tf_random_seed': None, '_task_type': u'master', '_global_id_in_cluster': 0, '_is_chief': True, '_cluster_spec': <tensorflow.python.training.server_lib.ClusterSpec object at 0x7fb7d06f6950>, '_model_dir': '/mnt/model', '_num_worker_replicas': 2, '_task_id': 0, '_log_step_count_steps': 100, '_master': u'grpc://tf-mnistjob-master-0:2222', '_save_checkpoints_steps': 1000, '_keep_checkpoint_every_n_hours': 10000, '_evaluation_master': '', '_service': None, '_save_summary_steps': 100, '_num_ps_replicas': 1}
+INFO:tensorflow:Start Tensorflow server.
+2018-12-06 01:36:11.074520: I tensorflow/core/platform/cpu_feature_guard.cc:140] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2018-12-06 01:36:11.075941: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job master -> {0 -> localhost:2222}
+2018-12-06 01:36:11.075994: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job ps -> {0 -> tf-mnistjob-ps-0:2222}
+2018-12-06 01:36:11.076002: I tensorflow/core/distributed_runtime/rpc/grpc_channel.cc:215] Initialize GrpcChannelCache for job worker -> {0 -> tf-mnistjob-worker-0:2222}
+2018-12-06 01:36:11.077335: I tensorflow/core/distributed_runtime/rpc/grpc_server_lib.cc:333] Started server with target: grpc://localhost:2222
+INFO:tensorflow:Calling model_fn.
+INFO:tensorflow:Done calling model_fn.
+INFO:tensorflow:Create CheckpointSaverHook.
+INFO:tensorflow:Graph was finalized.
+2018-12-06 01:36:12.524168: I tensorflow/core/distributed_runtime/master_session.cc:1024] Start master session a1371614ac2f87b6 with config: allow_soft_placement: true
+INFO:tensorflow:Running local_init_op.
+INFO:tensorflow:Done running local_init_op.
+INFO:tensorflow:Saving checkpoints for 1 into /mnt/model/model.ckpt.
+INFO:tensorflow:Calling model_fn.
+INFO:tensorflow:Done calling model_fn.
+INFO:tensorflow:Starting evaluation at 2018-12-06-01:36:13
+INFO:tensorflow:Graph was finalized.
+INFO:tensorflow:Restoring parameters from /mnt/model/model.ckpt-1
+INFO:tensorflow:Running local_init_op.
+INFO:tensorflow:Done running local_init_op.
+INFO:tensorflow:Evaluation [1/1]
+INFO:tensorflow:Finished evaluation at 2018-12-06-01:36:13
+INFO:tensorflow:Saving dict for global step 1: accuracy = 0.171875, global_step = 1, loss = 2.3066478
+INFO:tensorflow:loss = 2.327501, step = 0
+INFO:tensorflow:global_step/sec: 7.22724
+INFO:tensorflow:loss = 0.93418753, step = 177 (23.934 sec)
+INFO:tensorflow:Saving checkpoints for 201 into /mnt/model/model.ckpt.
+INFO:tensorflow:Calling model_fn.
+INFO:tensorflow:Done calling model_fn.
+INFO:tensorflow:Starting evaluation at 2018-12-06-01:36:40
+INFO:tensorflow:Graph was finalized.
+INFO:tensorflow:Restoring parameters from /mnt/model/model.ckpt-201
+INFO:tensorflow:Running local_init_op.
+INFO:tensorflow:Done running local_init_op.
+INFO:tensorflow:Evaluation [1/1]
+INFO:tensorflow:Finished evaluation at 2018-12-06-01:36:41
+INFO:tensorflow:Saving dict for global step 202: accuracy = 0.765625, global_step = 202, loss = 0.8067214
+INFO:tensorflow:Performing the final export in the end of training.
+INFO:tensorflow:Calling model_fn.
+INFO:tensorflow:Done calling model_fn.
+INFO:tensorflow:Signatures INCLUDED in export for Classify: None
+INFO:tensorflow:Signatures INCLUDED in export for Regress: None
+INFO:tensorflow:Signatures INCLUDED in export for Predict: ['serving_default', 'classes']
+INFO:tensorflow:Restoring parameters from /mnt/model/model.ckpt-201
+INFO:tensorflow:Assets added to graph.
+INFO:tensorflow:No assets to write.
+INFO:tensorflow:SavedModel written to: /mnt/export/temp-1544060201/saved_model.pb
+INFO:tensorflow:Loss for final step: 1.0026196.
+hello
+Successfully downloaded train-images-idx3-ubyte.gz 9912422 bytes.
+Extracting MNIST-data/train-images-idx3-ubyte.gz
+Successfully downloaded train-labels-idx1-ubyte.gz 28881 bytes.
+Extracting MNIST-data/train-labels-idx1-ubyte.gz
+Successfully downloaded t10k-images-idx3-ubyte.gz 1648877 bytes.
+Extracting MNIST-data/t10k-images-idx3-ubyte.gz
+Successfully downloaded t10k-labels-idx1-ubyte.gz 4542 bytes.
+Extracting MNIST-data/t10k-labels-idx1-ubyte.gz

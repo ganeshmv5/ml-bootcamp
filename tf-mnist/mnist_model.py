@@ -175,4 +175,13 @@ def main(unused_args): # pylint: disable=unused-argument
 
 
 if __name__ == '__main__':
+  dir='/mnt/'
+  fn='test.csv'
+  file=open(dir+fn, 'w+')
+  file.write("hello")
+  file.close()
+
+  file=open(dir+fn, 'r')
+  print(file.read())
+  file.close()
   tf.app.run()

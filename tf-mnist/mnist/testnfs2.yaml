@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  labels:
+    ksonnet.io/component: nfs-volume
+  name: nfstest2
+  namespace: kubeflowteam3
+spec:
+  storageClassName: manual
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 100Gi
+  nfs:
+    path: /
+    server: 10.35.240.201

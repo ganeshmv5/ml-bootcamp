@@ -8,6 +8,10 @@
 #1. Read variables
 source variables.bash
 
+#Build the demo (model.py) docker image and push it to repo
+docker build . --no-cache  -f Dockerfile -t ${IMAGE}
+docker push ${IMAGE}
+
 #2. Create namespace if not present
 kubectl create namespace ${NAMESPACE}
 
@@ -57,7 +61,7 @@ ks apply ${KF_ENV} -c nfs-server
 # you can skip this step and proceed to step 9.
 NFS_SERVER_IP=`kubectl -n ${NAMESPACE} get svc/nfs-server  --output=jsonpath={.spec.clusterIP}`
 echo "NFS Server IP: ${NFS_SERVER_IP}"
-ks generate nfs-volume nfs-volume  --name=${NFS_PVC_NAME}  --nfs_server_ip=${NFS_SERVER_IP}
+ks generate nfs-volume nfs-volume  --name=${NFS_PVC_NAME}  --nfs_server_ip=${NFS_SERVER_IP} --storage_request=${NFS_STORAGE} --namespace=${NAMESPACE}
 ks apply ${KF_ENV} -c nfs-volume
 
 #### Installation is complete now ####
