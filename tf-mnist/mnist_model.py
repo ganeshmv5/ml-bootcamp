@@ -21,167 +21,186 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import time
 import os
 import sys
 import numpy as np
 import tensorflow as tf
+import shutil
+from tensorflow import keras
+
+import pandas as pd
+import copy
+from tensorflow.python.saved_model import builder as saved_model_builder
+from tensorflow.python.saved_model import tag_constants, signature_constants, signature_def_utils_impl
 
 # Configure model options
 TF_DATA_DIR = os.getenv("TF_DATA_DIR", "/tmp/data/")
 TF_MODEL_DIR = os.getenv("TF_MODEL_DIR", None)
-TF_EXPORT_DIR = os.getenv("TF_EXPORT_DIR", "mnist/")
-TF_MODEL_TYPE = os.getenv("TF_MODEL_TYPE", "CNN")
-TF_TRAIN_STEPS = int(os.getenv("TF_TRAIN_STEPS", 200))
-TF_BATCH_SIZE = int(os.getenv("TF_BATCH_SIZE", 100))
-TF_LEARNING_RATE = float(os.getenv("TF_LEARNING_RATE", 0.01))
+TF_EXPORT_DIR = os.getenv("TF_EXPORT_DIR", "./mnist/")
 
-N_DIGITS = 10  # Number of digits.
-X_FEATURE = 'x'  # Name of the input feature.
-
-
-def conv_model(features, labels, mode):
-  """2-layer convolution model."""
-  # Reshape feature to 4d tensor with 2nd and 3rd dimensions being
-  # image width and height final dimension being the number of color channels.
-  feature = tf.reshape(features[X_FEATURE], [-1, 28, 28, 1])
-
-  # First conv layer will compute 32 features for each 5x5 patch
-  with tf.variable_scope('conv_layer1'):
-    h_conv1 = tf.layers.conv2d(
-        feature,
-        filters=32,
-        kernel_size=[5, 5],
-        padding='same',
-        activation=tf.nn.relu)
-    h_pool1 = tf.layers.max_pooling2d(
-        h_conv1, pool_size=2, strides=2, padding='same')
-
-  # Second conv layer will compute 64 features for each 5x5 patch.
-  with tf.variable_scope('conv_layer2'):
-    h_conv2 = tf.layers.conv2d(
-        h_pool1,
-        filters=64,
-        kernel_size=[5, 5],
-        padding='same',
-        activation=tf.nn.relu)
-    h_pool2 = tf.layers.max_pooling2d(
-        h_conv2, pool_size=2, strides=2, padding='same')
-    # reshape tensor into a batch of vectors
-    h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
-
-  # Densely connected layer with 1024 neurons.
-  h_fc1 = tf.layers.dense(h_pool2_flat, 1024, activation=tf.nn.relu)
-  h_fc1 = tf.layers.dropout(
-      h_fc1,
-      rate=0.5,
-      training=(mode == tf.estimator.ModeKeys.TRAIN))
-
-  # Compute logits (1 per class) and compute loss.
-  logits = tf.layers.dense(h_fc1, N_DIGITS, activation=None)
-  predict = tf.nn.softmax(logits)
-  classes = tf.cast(tf.argmax(predict, 1), tf.uint8)
-
-  # Compute predictions.
-  predicted_classes = tf.argmax(logits, 1)
-  if mode == tf.estimator.ModeKeys.PREDICT:
-    predictions = {
-        'class': predicted_classes,
-        'prob': tf.nn.softmax(logits)
-    }
-    return tf.estimator.EstimatorSpec(mode, predictions=predictions,
-        export_outputs={'classes':
-                        tf.estimator.export.PredictOutput({"predictions": predict,
-                                                           "classes": classes})})
-
-  # Compute loss.
-  loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-
-  # Create training op.
-  if mode == tf.estimator.ModeKeys.TRAIN:
-    optimizer = tf.train.GradientDescentOptimizer(
-        learning_rate=TF_LEARNING_RATE)
-    train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
-    return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op)
-
-  # Compute evaluation metrics.
-  eval_metric_ops = {
-      'accuracy': tf.metrics.accuracy(
-          labels=labels, predictions=predicted_classes)
-  }
-  return tf.estimator.EstimatorSpec(
-      mode, loss=loss, eval_metric_ops=eval_metric_ops)
-
-
-def cnn_serving_input_receiver_fn():
-  inputs = {X_FEATURE: tf.placeholder(tf.float32, [None, 28, 28])}
-  return tf.estimator.export.ServingInputReceiver(inputs, inputs)
-
-
-def linear_serving_input_receiver_fn():
-  inputs = {X_FEATURE: tf.placeholder(tf.float32, (784,))}
-  return tf.estimator.export.ServingInputReceiver(inputs, inputs)
-
-
-def main(unused_args): # pylint: disable=unused-argument
+def main(unused_args):
   tf.logging.set_verbosity(tf.logging.INFO)
+  
+  if not os.path.exists(TF_DATA_DIR):
+      os.mkdir(TF_DATA_DIR)
+  
+  data = pd.read_csv("/opt/data_csv_filtered1.csv")
+  data = data.fillna(0)
+  data.drop(['egQDropPkts', 'bufferDrop'], axis=1)
+  column_names = list(data.head(0))
 
-  # Download and load MNIST dataset.
-  mnist = tf.contrib.learn.datasets.load_dataset("mnist")
-  train_input_fn = tf.estimator.inputs.numpy_input_fn(
-      x={X_FEATURE: mnist.train.images},
-      y=mnist.train.labels.astype(np.int32),
-      batch_size=TF_BATCH_SIZE,
-      num_epochs=None,
-      shuffle=True)
-  test_input_fn = tf.estimator.inputs.numpy_input_fn(
-      x={X_FEATURE: mnist.train.images},
-      y=mnist.train.labels.astype(np.int32),
-      num_epochs=1,
-      shuffle=False)
+  unique_streams = set()
+  for val in data['srcIp']:
+      unique_streams.add(val)
 
-  if TF_MODEL_TYPE == "LINEAR":
-    # Linear classifier.
-    feature_columns = [
-        tf.feature_column.numeric_column(
-            X_FEATURE, shape=mnist.train.images.shape[1:])]
+  unique_ts = set()
+  for val in data['timestamp']:
+      unique_ts.add(val)
 
-    classifier = tf.estimator.LinearClassifier(
-        feature_columns=feature_columns, n_classes=N_DIGITS, model_dir=TF_MODEL_DIR)
-    classifier.train(input_fn=train_input_fn, steps=TF_TRAIN_STEPS)
-    scores = classifier.evaluate(input_fn=test_input_fn)
-    print('Accuracy (LinearClassifier): {0:f}'.format(scores['accuracy']))
-    # FIXME This doesn't seem to work. sticking to CNN for the example for now.
-    classifier.export_savedmodel(
-        TF_EXPORT_DIR, linear_serving_input_receiver_fn)
-  elif TF_MODEL_TYPE == "CNN":
-    # Convolutional network
-    training_config = tf.estimator.RunConfig(
-        model_dir=TF_MODEL_DIR, save_summary_steps=100, save_checkpoints_steps=1000)
-    classifier = tf.estimator.Estimator(
-        model_fn=conv_model, model_dir=TF_MODEL_DIR, config=training_config)
-    export_final = tf.estimator.FinalExporter(
-        TF_EXPORT_DIR, serving_input_receiver_fn=cnn_serving_input_receiver_fn)
-    train_spec = tf.estimator.TrainSpec(
-        input_fn=train_input_fn, max_steps=TF_TRAIN_STEPS)
-    eval_spec = tf.estimator.EvalSpec(input_fn=test_input_fn,
-                                      steps=1,
-                                      exporters=export_final,
-                                      throttle_secs=1,
-                                      start_delay_secs=1)
-    tf.estimator.train_and_evaluate(classifier, train_spec, eval_spec)
-  else:
-    print("No such model type: %s" % TF_MODEL_TYPE)
-    sys.exit(1)
+  final_result = list(dict())
+  vals_to_transpose = ('byteCount', 'pktCount', 'egQOcc')
+  malicious_stm = ('mStream10', 'mStream20', 'mStream30')
 
+  while len(unique_ts):
+      temp_unique_streams = copy.deepcopy(unique_streams)
+      temp_dict = dict()
+      
+      curr_ts = unique_ts.pop()
+      temp_dict['timestamp'] = curr_ts
+
+      test = data[data.timestamp == curr_ts]
+      m_stream10 = list(test[malicious_stm[0]])
+      m_stream20 = list(test[malicious_stm[1]])
+      m_stream30 = list(test[malicious_stm[2]])
+
+      for val in test[test.columns[1:7]].iterrows():
+          temp = val[1]
+          for each in vals_to_transpose:
+              new_index = temp['srcIp'] + "_" + each
+              temp_dict[new_index] = temp[each]
+          temp_unique_streams.remove(temp['srcIp'])
+      for strm in temp_unique_streams:
+          for each in vals_to_transpose:
+              new_index = strm + "_" + each
+              temp_dict[new_index] = 0
+
+      for strms in unique_streams:
+          temp_dict[strms] = 0
+
+      if 1.0 in m_stream10:
+          temp_dict['mStream10'] = 1
+      else:
+          temp_dict['mStream10'] = 0
+
+      if 1.0 in m_stream20:
+          temp_dict['mStream20'] = 1
+      else:
+          temp_dict['mStream20'] = 0
+
+      if 1.0 in m_stream30:
+          temp_dict['mStream30'] = 1
+      else:
+          temp_dict['mStream30'] = 0
+
+      final_result.append(temp_dict)
+
+  final_data = pd.DataFrame(final_result)
+
+  label_columns = list((data.loc[:, 'mStream10':'stream9']).head(0))
+  label_columns
+
+  final_data[:10]
+
+  feature_columns = list(final_data.head(0))
+  for col in label_columns:
+      if col in feature_columns:
+          feature_columns.remove(col)
+
+  feature_data = final_data.drop(['timestamp'], axis=1)
+  feature_columns.remove('timestamp')
+  feature_data[0:2]
+
+  label_data = final_data.drop(feature_columns, axis=1)
+  label_data = label_data.drop(['timestamp'], axis=1)
+  label_data[0:2]
+
+  #Normalize the byte and packet counts to get so that all features are in the scale 0 to 1
+  normalized_data = final_data[:]
+  normalized_data = normalized_data.drop(['timestamp'], axis=1)
+
+  for col in feature_columns:
+      if "bytecount" in col.lower(): 
+          normalized_data[col] = normalized_data[col]/(10*(10**9))
+      elif "pktcount" in col.lower():
+          normalized_data[col] = normalized_data[col]/820209
+      elif "egqocc" in col.lower():
+          normalized_data[col] = normalized_data[col]/100
+
+  normalized_data[:10]
+
+  # Splitting the data into Training and Testing
+  # In order to test our algorithm, we'll split the data into a Training and a Testing set. The size of the testing set will be 10% of the total data.
+
+  sample = np.random.choice(normalized_data.index, size=int(len(normalized_data)*0.9), replace=False)
+  train_data, test_data = normalized_data.iloc[sample], normalized_data.drop(sample)
+
+  print("Number of training samples is", len(train_data))
+  print("Number of testing samples is", len(test_data))
+  print(train_data[:10])
+  print(test_data[:10])
+
+
+  # Splitting the data into features and targets (labels)
+  # Now, as a final step before the training, we'll split the data into features (X) and targets (y).
+
+  # Separate data and one-hot encode the output
+  # Note: We're also turning the data into numpy arrays, in order to train the model in Keras
+  features = np.array(train_data.drop(label_columns, axis=1))
+  targets = np.array(train_data.drop(feature_columns, axis=1))
+
+  features_test = np.array(test_data.drop(label_columns, axis=1))
+  targets_test = np.array(test_data.drop(feature_columns, axis=1))
+
+  print(features[:2])
+  print(targets[:2])
+
+  # Building the model
+  model = keras.Sequential()
+  model.add(keras.layers.Dense(256, activation='sigmoid', input_shape=(177,)))
+  model.add(keras.layers.Dropout(.2))
+  model.add(keras.layers.Dense(128, activation='sigmoid'))
+  model.add(keras.layers.Dropout(.2))
+  model.add(keras.layers.Dense(64, activation='sigmoid'))
+  model.add(keras.layers.Dropout(.1))
+  model.add(keras.layers.Dense(59, activation='sigmoid'))
+
+  # Compiling the model
+  model.compile(loss='categorical_crossentropy',
+                optimizer=tf.keras.optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.0),
+                metrics=['categorical_accuracy'])
+
+  model.summary()
+
+  # Training the model
+  history = model.fit(features, targets, epochs=25, batch_size=100, verbose=2)
+  # Scoring the model
+  # Evaluating the model on the training and testing set
+  score = model.evaluate(features, targets)
+  print("\n Training Loss:", score[0])
+  print("\n Training Accuracy:", score[1])
+  score = model.evaluate(features_test, targets_test)
+  print("\n Testing Loss:", score[0])
+  print("\n Testing Accuracy:", score[1])
+
+  print("Model.input - ", model.input)
+  print("Model.output - ", model.output)
+
+  tf.saved_model.simple_save(keras.backend.get_session(),
+          TF_EXPORT_DIR + "/" + str(int(time.time())),
+          inputs={'data': model.input},
+          outputs={t.name:t for t in model.outputs})
 
 if __name__ == '__main__':
-  dir='/mnt/'
-  fn='test.csv'
-  file=open(dir+fn, 'w+')
-  file.write("hello")
-  file.close()
-
-  file=open(dir+fn, 'r')
-  print(file.read())
-  file.close()
   tf.app.run()
+
